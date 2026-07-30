@@ -3,12 +3,12 @@
   "mermelada_pina": true,
   "mermelada_mora": true,
   "mermelada_durazno": true,
-  "mermelada_ciruela": true,
+  "mermelada_ciruela": false,
   "mermelada_granola": true,
 
   "natural_1kilo": true,
   "natural_1kilo_mermelada": true,
-  "natural_1kilo_ciruelas": true,
+  "natural_1kilo_ciruelas": false,
   "natural_vaso8oz": true,
 
   "parfait_8oz": true,
@@ -19,5 +19,5 @@
   "frasco_pina": true,
   "frasco_mora": true,
   "frasco_durazno": true,
-  "frasco_ciruelas": true
+  "frasco_ciruelas": false
 }
