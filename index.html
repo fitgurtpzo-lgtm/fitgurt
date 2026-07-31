@@ -365,6 +365,29 @@
   }
   .cart-total strong{font-family:'Fraunces',serif; font-size:1.5rem; color:var(--berry-deep);}
   .cart-send{width:100%; justify-content:center; border:none; cursor:pointer; font-size:1rem;}
+  .payment-copy-box{
+    background:var(--cream-deep); border-radius:16px;
+    padding:16px 18px; margin-bottom:16px;
+  }
+  .payment-copy-head{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:10px;
+  }
+  .payment-copy-head span{
+    font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em;
+    color:var(--ink-soft); font-weight:600;
+  }
+  .copy-btn{
+    background:var(--ink); color:var(--cream); border:none;
+    padding:6px 14px; border-radius:100px; font-size:0.78rem; font-weight:600;
+    cursor:pointer; font-family:'Work Sans',sans-serif;
+  }
+  .copy-btn.copied{background:var(--moss);}
+  .payment-copy-text{
+    margin:0; white-space:pre-wrap; word-break:break-word;
+    font-family:'Work Sans',sans-serif; font-size:0.9rem; color:var(--ink);
+    line-height:1.6;
+  }
   .cart-overlay{
     position:fixed; inset:0; background:rgba(38,49,79,0.35); z-index:75;
     opacity:0; pointer-events:none; transition:opacity .25s ease;
@@ -873,6 +896,18 @@
     </div>
     <div id="deliveryBreakdown"></div>
     <div class="cart-total"><span>Total</span><span><strong id="cartTotal">$0.00</strong><span class="bs-equiv" id="cartTotalBs"></span></span></div>
+
+    <div class="payment-copy-box">
+      <div class="payment-copy-head">
+        <span>Datos para tu pago móvil</span>
+        <button type="button" class="copy-btn" id="copyPaymentBtn">Copiar</button>
+      </div>
+      <pre class="payment-copy-text" id="paymentCopyText">Banco: Provincial (BBVA)
+Teléfono: 0414-9858205
+C.I.: 19.472.723
+Monto a pagar: calculando…</pre>
+    </div>
+
     <a class="btn cart-send" id="cartSend" href="#" target="_blank">Enviar pedido por WhatsApp</a>
   </div>
 </div>
@@ -993,6 +1028,8 @@
   const cartTotalBsEl = document.getElementById('cartTotalBs');
   const cartBadgeEl = document.getElementById('cartBadge');
   const cartSendEl = document.getElementById('cartSend');
+  const paymentCopyTextEl = document.getElementById('paymentCopyText');
+  const copyPaymentBtn = document.getElementById('copyPaymentBtn');
   const cartPanel = document.getElementById('cartPanel');
   const cartOverlay = document.getElementById('cartOverlay');
   const bcvRateEl = document.getElementById('bcvRate');
@@ -1016,6 +1053,36 @@
   function closeCart(){ cartPanel.classList.remove('open'); cartOverlay.classList.remove('open'); }
 
   document.getElementById('cartFab').addEventListener('click', openCart);
+
+  copyPaymentBtn.addEventListener('click', () => {
+    const text = paymentCopyTextEl.textContent;
+    const done = () => {
+      copyPaymentBtn.textContent = '¡Copiado!';
+      copyPaymentBtn.classList.add('copied');
+      setTimeout(() => {
+        copyPaymentBtn.textContent = 'Copiar';
+        copyPaymentBtn.classList.remove('copied');
+      }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
+  });
+
+  function fallbackCopy(text, cb){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    cb();
+  }
   document.getElementById('cartClose').addEventListener('click', closeCart);
   cartOverlay.addEventListener('click', closeCart);
 
@@ -1052,6 +1119,15 @@
     } else {
       deliveryBreakdownEl.innerHTML = '';
     }
+
+    const montoLinea = bcvRate
+      ? `Bs ${(total * bcvRate).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})} (equivale a $${total.toFixed(2)} · tasa BCV)`
+      : `$${total.toFixed(2)} (tasa BCV no disponible en este momento)`;
+    paymentCopyTextEl.textContent =
+`Banco: Provincial (BBVA)
+Teléfono: 0414-9858205
+C.I.: 19.472.723
+Monto a pagar: ${montoLinea}`;
 
     if (cart.length === 0){
       cartItemsEl.innerHTML = '<div class="cart-empty">Aún no has agregado productos. Elige sabor, tamaño y cantidad en el catálogo y toca "Agregar al pedido".</div>';
