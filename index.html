@@ -322,7 +322,8 @@
     width:32px; height:32px; border-radius:50%;
   }
   .cart-close:hover{background:var(--cream-deep);}
-  .cart-items{padding:8px 24px; overflow-y:auto; flex:1;}
+  .cart-scroll{flex:1; overflow-y:auto; display:flex; flex-direction:column; min-height:0;}
+  .cart-items{padding:8px 24px;}
   .cart-item{
     display:flex; justify-content:space-between; align-items:flex-start;
     gap:10px; padding:14px 0; border-bottom:1px dashed rgba(38,49,79,0.14);
@@ -797,9 +798,9 @@
         <span class="eyebrow">Métodos de pago</span>
         <h3>Pago móvil / Transferencia</h3>
         <ul class="pago-list">
-          <li><span>Banco</span><span>Provincial (BBVA)</span></li>
           <li><span>Teléfono</span><span>0414-9858205</span></li>
           <li><span>C.I.</span><span>19.472.723</span></li>
+          <li><span>Banco</span><span>0108 Provincial (BBVA)</span></li>
         </ul>
         <div class="bcv-rate" id="bcvRate">
           <span class="bcv-dot"></span> Consultando tasa BCV del día…
@@ -842,6 +843,7 @@
     <h3>Tu pedido</h3>
     <button class="cart-close" id="cartClose" aria-label="Cerrar">✕</button>
   </div>
+  <div class="cart-scroll">
   <div class="cart-items" id="cartItems">
     <div class="cart-empty">Aún no has agregado productos. Elige sabor, tamaño y cantidad en el catálogo y toca "Agregar al pedido".</div>
   </div>
@@ -941,13 +943,14 @@
         <span>Datos para tu pago móvil</span>
         <button type="button" class="copy-btn" id="copyPaymentBtn">Copiar</button>
       </div>
-      <pre class="payment-copy-text" id="paymentCopyText">Provincial
-04149858205
+      <pre class="payment-copy-text" id="paymentCopyText">04149858205
 19472723
+0108 Provincial
 Bs calculando</pre>
     </div>
 
     <a class="btn cart-send" id="cartSend" href="#" target="_blank">Enviar pedido por WhatsApp</a>
+  </div>
   </div>
 </div>
 
@@ -1196,9 +1199,9 @@ Bs calculando</pre>
     const montoBs = bcvRate ? Math.round(total * bcvRate) : null;
     const montoLinea = montoBs !== null ? `Bs ${montoBs}` : `$${Math.round(total)}`;
     paymentCopyTextEl.textContent =
-`Provincial
-04149858205
+`04149858205
 19472723
+0108 Provincial
 ${montoLinea}`;
 
     if (cart.length === 0){
