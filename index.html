@@ -369,6 +369,24 @@
     background:var(--cream-deep); border-radius:16px;
     padding:16px 18px; margin-bottom:16px;
   }
+  .recipient-fields{margin-bottom:16px;}
+  .field-half{margin-bottom:12px;}
+  .field-half label{
+    display:block; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em;
+    color:var(--ink-soft); font-weight:600; margin-bottom:6px;
+  }
+  .field-half input{
+    width:100%; border:1.5px solid rgba(38,49,79,0.14);
+    border-radius:12px; padding:10px 14px;
+    font-family:'Work Sans',sans-serif; font-size:0.92rem; color:var(--ink);
+    background:var(--cream);
+  }
+  .field-half input:focus{outline:2px solid var(--berry); outline-offset:1px;}
+  .field-half input.invalid{border-color:#C0524A; background:#FBEDEC;}
+  .recipient-error{
+    display:none; color:#C0524A; font-size:0.82rem; margin-top:4px;
+  }
+  .recipient-error.visible{display:block;}
   .payment-copy-head{
     display:flex; justify-content:space-between; align-items:center;
     margin-bottom:10px;
@@ -619,6 +637,15 @@
             <option data-price="12" data-key="natural_1kilo_mermelada">1 kilo con mermelada (250gr)</option>
             <option data-price="12" data-key="natural_1kilo_ciruelas">1 kilo c/m ciruelas pasas</option>
             <option data-price="1.7" data-key="natural_vaso8oz">Vaso 8oz</option>
+          </select>
+        </div>
+        <div class="field natural-flavor-field" style="display:none;">
+          <label>Sabor de la mermelada</label>
+          <select class="f-natural-flavor">
+            <option>Fresa</option>
+            <option>Piña</option>
+            <option>Mora</option>
+            <option>Durazno</option>
           </select>
         </div>
         <div class="card-foot">
@@ -897,15 +924,27 @@
     <div id="deliveryBreakdown"></div>
     <div class="cart-total"><span>Total</span><span><strong id="cartTotal">$0.00</strong><span class="bs-equiv" id="cartTotalBs"></span></span></div>
 
+    <div class="recipient-fields">
+      <div class="field-half">
+        <label>Nombre de quien recibe</label>
+        <input type="text" id="recipientName" placeholder="Ej: María Pérez">
+      </div>
+      <div class="field-half">
+        <label>Teléfono de quien recibe</label>
+        <input type="tel" id="recipientPhone" placeholder="Ej: 04121234567">
+      </div>
+      <div class="recipient-error" id="recipientError">Completa el nombre y teléfono de quien recibe para enviar el pedido.</div>
+    </div>
+
     <div class="payment-copy-box">
       <div class="payment-copy-head">
         <span>Datos para tu pago móvil</span>
         <button type="button" class="copy-btn" id="copyPaymentBtn">Copiar</button>
       </div>
-      <pre class="payment-copy-text" id="paymentCopyText">Banco: Provincial (BBVA)
-Teléfono: 0414-9858205
-C.I.: 19.472.723
-Monto a pagar: calculando…</pre>
+      <pre class="payment-copy-text" id="paymentCopyText">Provincial
+04149858205
+19472723
+Bs calculando</pre>
     </div>
 
     <a class="btn cart-send" id="cartSend" href="#" target="_blank">Enviar pedido por WhatsApp</a>
@@ -926,6 +965,8 @@ Monto a pagar: calculando…</pre>
     const qtyBtns = card.querySelectorAll('.qty-btn');
     const flavorSel = card.querySelector('.f-flavor');
     const presSel = card.querySelector('.f-presentation');
+    const naturalFlavorField = card.querySelector('.natural-flavor-field');
+    const naturalFlavorSel = card.querySelector('.f-natural-flavor');
     const segBtns = card.querySelectorAll('.seg-opt');
     const addBtn = card.querySelector('.add-btn');
     let qty = 1;
@@ -948,11 +989,21 @@ Monto a pagar: calculando…</pre>
         const size = card.querySelector('.seg-opt.active').dataset.size;
         return flavor + ' · ' + size;
       }
+      if (type === 'natural' && presSel.value === '1 kilo con mermelada (250gr)'){
+        return presSel.value + ' · ' + naturalFlavorSel.value;
+      }
       return presSel.value;
+    }
+
+    function updateNaturalFlavorVisibility(){
+      if (!naturalFlavorField) return;
+      const show = presSel.value === '1 kilo con mermelada (250gr)';
+      naturalFlavorField.style.display = show ? '' : 'none';
     }
 
     function refreshPrice(){
       priceEl.textContent = '$' + currentUnitPrice().toFixed(2);
+      updateNaturalFlavorVisibility();
     }
 
     if (flavorSel) flavorSel.addEventListener('change', refreshPrice);
@@ -1030,6 +1081,11 @@ Monto a pagar: calculando…</pre>
   const cartSendEl = document.getElementById('cartSend');
   const paymentCopyTextEl = document.getElementById('paymentCopyText');
   const copyPaymentBtn = document.getElementById('copyPaymentBtn');
+  const recipientNameEl = document.getElementById('recipientName');
+  const recipientPhoneEl = document.getElementById('recipientPhone');
+  const recipientErrorEl = document.getElementById('recipientError');
+  recipientNameEl.addEventListener('input', renderCart);
+  recipientPhoneEl.addEventListener('input', renderCart);
   const cartPanel = document.getElementById('cartPanel');
   const cartOverlay = document.getElementById('cartOverlay');
   const bcvRateEl = document.getElementById('bcvRate');
@@ -1053,6 +1109,23 @@ Monto a pagar: calculando…</pre>
   function closeCart(){ cartPanel.classList.remove('open'); cartOverlay.classList.remove('open'); }
 
   document.getElementById('cartFab').addEventListener('click', openCart);
+
+  cartSendEl.addEventListener('click', (e) => {
+    const name = recipientNameEl.value.trim();
+    const phone = recipientPhoneEl.value.trim();
+    let valid = true;
+    recipientNameEl.classList.remove('invalid');
+    recipientPhoneEl.classList.remove('invalid');
+    if (!name){ recipientNameEl.classList.add('invalid'); valid = false; }
+    if (!phone){ recipientPhoneEl.classList.add('invalid'); valid = false; }
+    if (!valid){
+      e.preventDefault();
+      recipientErrorEl.classList.add('visible');
+      recipientNameEl.focus();
+    } else {
+      recipientErrorEl.classList.remove('visible');
+    }
+  });
 
   copyPaymentBtn.addEventListener('click', () => {
     const text = paymentCopyTextEl.textContent;
@@ -1120,14 +1193,13 @@ Monto a pagar: calculando…</pre>
       deliveryBreakdownEl.innerHTML = '';
     }
 
-    const montoLinea = bcvRate
-      ? `Bs ${(total * bcvRate).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})} (equivale a $${total.toFixed(2)} · tasa BCV)`
-      : `$${total.toFixed(2)} (tasa BCV no disponible en este momento)`;
+    const montoBs = bcvRate ? Math.round(total * bcvRate) : null;
+    const montoLinea = montoBs !== null ? `Bs ${montoBs}` : `$${Math.round(total)}`;
     paymentCopyTextEl.textContent =
-`Banco: Provincial (BBVA)
-Teléfono: 0414-9858205
-C.I.: 19.472.723
-Monto a pagar: ${montoLinea}`;
+`Provincial
+04149858205
+19472723
+${montoLinea}`;
 
     if (cart.length === 0){
       cartItemsEl.innerHTML = '<div class="cart-empty">Aún no has agregado productos. Elige sabor, tamaño y cantidad en el catálogo y toca "Agregar al pedido".</div>';
@@ -1150,6 +1222,8 @@ Monto a pagar: ${montoLinea}`;
     }
 
     // Construir mensaje de WhatsApp con la comanda completa
+    const recipientName = recipientNameEl.value.trim();
+    const recipientPhone = recipientPhoneEl.value.trim();
     let msg = 'Hola Fitgurt, quiero hacer este pedido:\n\n';
     if (cart.length === 0){
       msg += '(catálogo vacío)\n';
@@ -1164,8 +1238,10 @@ Monto a pagar: ${montoLinea}`;
       }
       msg += `\nTotal: $${total.toFixed(2)}`;
       if (bcvRate){
-        msg += ` (≈ Bs ${(total * bcvRate).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})} · tasa BCV)`;
+        msg += ` (≈ Bs ${montoBs} · tasa BCV)`;
       }
+      msg += `\n\nRecibe: ${recipientName || '(falta el nombre)'}`;
+      msg += `\nTeléfono: ${recipientPhone || '(falta el teléfono)'}`;
     }
     cartSendEl.href = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(msg);
   }
