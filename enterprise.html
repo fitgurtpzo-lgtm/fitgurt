@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#26314f">
+  <title>Fitgurt Enterprise — Operaciones</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="enterprise.css">
+  <link rel="stylesheet" href="enterprise-operations.css">
+  <link rel="stylesheet" href="enterprise-customers.css">
+  <link rel="stylesheet" href="enterprise-brand.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand enterprise-brand" href="enterprise.html" aria-label="Fitgurt Enterprise"><img src="fitgurt-logo-cropped.png" alt="Fitgurt"><span>enterprise</span></a>
+    <nav aria-label="Navegación principal">
+      <a class="nav-link active" href="#resumen"><span>▦</span> Resumen</a>
+      <a class="nav-link" href="#pedidos"><span>□</span> Pedidos <b id="orderCount">4</b></a>
+      <a class="nav-link" href="#inventario"><span>◇</span> Inventario</a>
+      <a class="nav-link" href="#clientes"><span>♧</span> Clientes</a>
+    </nav>
+    <div class="sidebar-bottom"><div class="user-avatar" id="sessionInitials">FM</div><div><strong id="sessionName">Fitgurt Manager</strong><small>Administración</small></div><button class="more" id="logoutButton" aria-label="Cerrar sesión" title="Cerrar sesión">↪</button></div>
+  </aside>
+
+  <main>
+    <header class="topbar"><button class="menu-toggle" aria-label="Abrir menú">☰</button><div><p class="eyebrow">Martes, 5 de agosto</p><h1>Buenos días, equipo.</h1></div><div class="top-actions"><button class="icon-button" aria-label="Notificaciones">♢<i></i></button><button class="date-filter">Esta semana <span>⌄</span></button></div></header>
+
+    <section id="resumen" class="overview" aria-labelledby="overview-title">
+      <div class="section-heading"><div><p class="eyebrow">Vista general</p><h2 id="overview-title">El negocio está en movimiento</h2></div><button class="primary" id="newOrder">+ Registrar pedido</button></div>
+      <div class="metrics">
+        <article class="metric-card"><div class="metric-icon berry">↗</div><p>Ventas de hoy</p><strong>$<span id="todaySales">186.50</span></strong><small class="positive">↑ 18.4% <em>vs. ayer</em></small></article>
+        <article class="metric-card"><div class="metric-icon moss">□</div><p>Pedidos recibidos</p><strong id="todayOrders">12</strong><small class="positive">↑ 3 <em>vs. ayer</em></small></article>
+        <article class="metric-card"><div class="metric-icon amber">◷</div><p>Por preparar</p><strong id="pendingOrders">4</strong><small>Requieren atención</small></article>
+        <article class="metric-card"><div class="metric-icon blue">◇</div><p>Productos activos</p><strong id="activeProducts">14</strong><small>del catálogo actual</small></article>
+      </div>
+    </section>
+
+    <section class="performance-grid" aria-label="Rendimiento">
+      <article class="panel sales-panel"><div class="panel-head"><div><p class="eyebrow">Facturación</p><h2>Ventas semanales</h2></div><strong>$1,248<span>.60</span></strong></div><div class="chart" role="img" aria-label="Gráfico de ventas de lunes a domingo"><div class="grid-lines"></div><div class="bars"><i style="--h:42%"><b>$142</b><small>Lun</small></i><i style="--h:58%"><b>$188</b><small>Mar</small></i><i style="--h:37%"><b>$121</b><small>Mié</small></i><i style="--h:71%"><b>$228</b><small>Jue</small></i><i class="current" style="--h:82%"><b>$267</b><small>Vie</small></i><i style="--h:55%"><b>$177</b><small>Sáb</small></i><i style="--h:39%"><b>$126</b><small>Dom</small></i></div></div></article>
+      <article class="panel top-products"><div class="panel-head"><div><p class="eyebrow">Más pedidos</p><h2>Productos estrella</h2></div><button class="text-button">Ver reporte →</button></div><ol><li><span class="product-dot fresa"></span><div><strong>Parfait fresa · 8 oz</strong><small>32 unidades vendidas</small></div><b>$176.00</b></li><li><span class="product-dot granola"></span><div><strong>Yogurt natural · 1 kg</strong><small>24 unidades vendidas</small></div><b>$168.00</b></li><li><span class="product-dot mora"></span><div><strong>Parfait mora · 14 oz</strong><small>18 unidades vendidas</small></div><b>$153.00</b></li></ol></article>
+    </section>
+
+    <section id="pedidos" class="orders-section"><div class="section-heading"><div><p class="eyebrow">Operación</p><h2>Pedidos recientes</h2></div><button class="text-button" id="showAllOrders">Ver todos los pedidos →</button></div><div class="panel table-panel"><div class="order-tools"><div class="order-filters" role="group" aria-label="Filtrar pedidos"><button class="filter active" data-filter="all">Todos</button><button class="filter" data-filter="pending">Por preparar</button><button class="filter" data-filter="ready">Listos</button><button class="filter" data-filter="delivery">En ruta</button></div><label class="order-search"><span>⌕</span><input id="orderSearch" type="search" placeholder="Buscar pedido o cliente"></label></div><div class="table-wrap"><table><thead><tr><th>Pedido</th><th>Cliente</th><th>Entrega</th><th>Total</th><th>Estado</th><th aria-label="Acciones"></th></tr></thead><tbody id="ordersTable"></tbody></table></div><p class="empty-orders" id="emptyOrders" hidden>No hay pedidos que coincidan con esta vista.</p></div></section>
+
+    <section id="inventario" class="inventory-section"><div class="section-heading"><div><p class="eyebrow">Catálogo</p><h2>Disponibilidad de inventario</h2></div><div class="inventory-actions"><span id="stockNotice" class="sync-status">● Sincronizado localmente</span><button class="secondary" id="exportStock">Exportar CSV</button></div></div><div class="panel inventory-panel"><div class="inventory-intro"><div><h3>Control rápido</h3><p>Activa o pausa productos. Los cambios se mantienen en este navegador para la gestión diaria.</p></div><span class="inventory-summary"><b id="stockAvailable">14</b> disponibles</span></div><div class="stock-list" id="stockList"></div></div></section>
+    <section id="clientes" class="customers-section"><div class="section-heading"><div><p class="eyebrow">Relaciones</p><h2>Clientes</h2></div><button class="secondary" id="exportCustomers">Exportar clientes</button></div><div class="customer-grid"><article class="panel customer-insight"><p class="eyebrow">Base de clientes</p><strong id="customerTotal">0</strong><span>clientes en este período</span><div class="insight-rule"></div><p><b id="returningCustomers">0</b> clientes recurrentes</p><small>El historial se actualiza con cada pedido registrado.</small></article><article class="panel customer-list"><div class="customer-list-head"><h3>Mayor valor acumulado</h3><span>Últimos pedidos</span></div><div id="customersList"></div><p class="empty-customers" id="emptyCustomers" hidden>Aún no hay clientes para mostrar.</p></article></div></section>
+  </main>
+
+  <dialog id="orderDialog"><form method="dialog"><button class="dialog-close" value="cancel" aria-label="Cerrar">×</button><p class="eyebrow">Nuevo pedido</p><h2>Registrar pedido manual</h2><label>Nombre del cliente<input id="customerName" required placeholder="Ej. María González"></label><label>Total en USD<input id="orderTotal" required min="0" step="0.01" type="number" placeholder="0.00"></label><label>Tipo de entrega<select id="deliveryType"><option>Delivery</option><option>Retiro en tienda</option></select></label><div class="dialog-actions"><button value="cancel" class="secondary">Cancelar</button><button value="default" class="primary" id="saveOrder">Guardar pedido</button></div></form></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="enterprise-auth.js"></script>
+  <script src="enterprise.js"></script>
+</body>
+</html>
