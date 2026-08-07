@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#26314f">
+  <title>Acceso — Fitgurt Enterprise</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="enterprise-login.css">
+</head>
+<body>
+  <main class="login-shell">
+    <section class="login-story">
+      <a href="index.html" class="story-brand"><img src="fitgurt-logo-cropped.png" alt="Fitgurt"><span>enterprise</span></a>
+      <div class="story-copy"><p class="eyebrow">Operaciones Fitgurt</p><h1>Todo lo que necesitas para hacer crecer cada día.</h1><p>Gestiona pedidos, disponibilidad y la relación con tus clientes desde un único espacio de trabajo.</p></div>
+      <div class="story-footer"><span>© 2026 Fitgurt</span><span>Puerto Ordaz, Venezuela</span></div>
+    </section>
+    <section class="login-panel"><div class="login-card"><p class="eyebrow">Acceso protegido</p><h2>Bienvenido de nuevo.</h2><p class="login-lede">Ingresa tus credenciales para acceder a Enterprise.</p><form id="loginForm" novalidate><label>Correo electrónico<input id="email" type="email" autocomplete="email" placeholder="nombre@fitgurt.com" required></label><label>Contraseña<div class="password-field"><input id="password" type="password" autocomplete="current-password" placeholder="Tu contraseña" required minlength="8"><button type="button" id="togglePassword" aria-label="Mostrar contraseña">Mostrar</button></div></label><p class="form-error" id="formError" role="alert" hidden></p><button class="login-button" type="submit">Iniciar sesión <span>→</span></button></form><div class="demo-access"><strong>Acceso de demostración</strong><span>admin@fitgurt.com · fitgurt2026</span></div><a class="back-link" href="index.html">← Volver a la tienda</a></div></section>
+  </main>
+  <script src="enterprise-login.js"></script>
+</body>
+</html>

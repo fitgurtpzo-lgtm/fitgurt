@@ -1,0 +1,1 @@
+const menuButton=document.getElementById('menuButton'),navigation=document.getElementById('nav');menuButton.onclick=()=>navigation.classList.toggle('open');navigation.querySelectorAll('a').forEach(link=>link.onclick=()=>navigation.classList.remove('open'));
