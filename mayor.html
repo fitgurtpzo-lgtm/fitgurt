@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fitgurt · Al mayor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#FAF6EC;--cream-deep:#F1E9D8;--ink:#26314F;--ink-soft:#4B5670;--berry:#A23B5C;--moss:#8B9A5B;--white:#fff;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Work Sans',sans-serif;background:var(--cream);color:var(--ink);}
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:500;margin:0;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:20px 5vw;border-bottom:1px solid #e8e3d9;background:var(--white);}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand img{height:32px;}
+  .brand span{font-size:11px;letter-spacing:1px;text-transform:uppercase;border:1px solid #d8d1c7;padding:3px 6px;border-radius:5px;color:var(--ink-soft);}
+  .topbar nav{display:flex;gap:16px;align-items:center;font-size:13px;font-weight:600;}
+  .topbar nav a{color:var(--ink-soft);text-decoration:none;}
+  .topbar nav a.active{color:var(--berry);}
+  .wrap{max-width:1040px;margin:0 auto;padding:28px 20px 60px;}
+  .eyebrow{margin:0;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--berry);font-weight:700;}
+  .tabs{display:flex;gap:6px;border-bottom:1px solid #e8e3d9;margin:22px 0;flex-wrap:wrap;}
+  .tab{padding:10px 16px;border:none;background:none;cursor:pointer;font-weight:600;font-size:13.5px;color:#6d7589;border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .tab.active{color:var(--berry);border-bottom-color:var(--berry);}
+  .card{background:var(--white);border:1px solid rgba(38,49,79,0.08);border-radius:14px;padding:16px;margin-bottom:16px;}
+  .grid2{display:grid;grid-template-columns:1fr 320px;gap:20px;}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px dashed #e8e3d9;}
+  .row:first-child{border-top:none;}
+  label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-top:10px;}
+  input,select{width:100%;border:1px solid rgba(38,49,79,0.18);border-radius:8px;padding:8px 10px;font-size:13.5px;margin-top:5px;font-family:inherit;color:var(--ink);}
+  button.primary{background:var(--berry);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-weight:600;font-size:13.5px;cursor:pointer;margin-top:12px;}
+  button.ghost{background:var(--cream-deep);color:var(--ink);border:none;border-radius:8px;padding:7px 12px;font-weight:600;font-size:12.5px;cursor:pointer;}
+  button.danger{background:#f9e9ed;color:var(--berry);}
+  .stat{background:var(--cream-deep);border-radius:14px;padding:14px 16px;}
+  .stat b{display:block;font-size:22px;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;}
+  .muted{color:var(--ink-soft);font-size:12.5px;}
+  .badge{display:inline-block;background:var(--cream-deep);color:var(--berry);font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:100px;margin-left:6px;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="brand" href="enterprise.html"><img src="fitgurt-logo-cropped.png" alt="Fitgurt"><span>al mayor</span></a>
+  <nav>
+    <a href="enterprise.html">Panel menudeo</a>
+    <a href="mayor.html" class="active">Panel al mayor</a>
+    <a href="#" id="logoutLink">Salir</a>
+  </nav>
+</div>
+
+<div class="wrap">
+  <p class="eyebrow">Fitgurt · Venta al mayor</p>
+  <h1>Materia prima, recetas y pedidos a supermercados</h1>
+  <p class="muted" style="margin-top:6px;">Enfocado en tus dos productos de mayor: Yogurt natural 150gr y Yogurt natural 1 kilo.</p>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="resumen">Resumen</button>
+    <button class="tab" data-tab="materiales">Materia prima</button>
+    <button class="tab" data-tab="productos">Productos y recetas</button>
+    <button class="tab" data-tab="pedidos">Pedidos al mayor</button>
+  </div>
+  <div id="content"></div>
+</div>
+
+<script src="enterprise-auth.js"></script>
+<script>
+const WHOLESALE_IDS = ['natural_150gr', 'natural_1kilo'];
+let materials = [], products = [], orders = [], tab = 'resumen';
+const el = (id) => document.getElementById(id);
+
+function authHeaders() {
+  return { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (window.FITGURT_TOKEN || '') };
+}
+async function api(url, opts) {
+  const res = await fetch(url, { headers: authHeaders(), ...opts });
+  if (res.status === 401) {
+    localStorage.removeItem('fitgurt-enterprise-session');
+    window.location.replace('enterprise-login.html');
+    throw new Error('Sesión expirada');
+  }
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Error de servidor');
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+async function loadAll() {
+  [materials, products, orders] = await Promise.all([
+    api('/api/materials'),
+    api('/api/products?all=1'),
+    api('/api/orders'),
+  ]);
+  orders = orders.filter((o) => o.channel === 'mayor');
+  render();
+}
+
+function switchTab(next) {
+  tab = next;
+  document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+  render();
+}
+document.querySelectorAll('.tab').forEach((b) => (b.onclick = () => switchTab(b.dataset.tab)));
+el('logoutLink').onclick = (e) => { e.preventDefault(); localStorage.removeItem('fitgurt-enterprise-session'); window.location.replace('enterprise-login.html'); };
+
+function render() {
+  const c = el('content');
+  if (tab === 'resumen') c.innerHTML = renderResumen();
+  if (tab === 'materiales') c.innerHTML = renderMateriales();
+  if (tab === 'productos') c.innerHTML = renderProductos();
+  if (tab === 'pedidos') c.innerHTML = renderPedidos();
+  bind();
+}
+
+function wholesaleProducts() {
+  return products.filter((p) => WHOLESALE_IDS.includes(p.id));
+}
+
+function renderResumen() {
+  const totalMayor = orders.reduce((s, o) => s + Number(o.total), 0);
+  const low = materials.filter((m) => Number(m.stock) <= Number(m.min_stock));
+  return `
+    <div class="stats">
+      <div class="stat"><span class="muted">Vendido al mayor (histórico)</span><b>$${totalMayor.toFixed(2)}</b></div>
+      <div class="stat"><span class="muted">Pedidos a supermercados</span><b>${orders.length}</b></div>
+      <div class="stat" style="${low.length ? 'background:#f9e9ed' : ''}"><span class="muted">Materia prima baja</span><b style="${low.length ? 'color:var(--berry)' : ''}">${low.length}</b></div>
+    </div>
+    <div class="card"><strong>Tus productos de mayor</strong>
+      ${wholesaleProducts().map((p) => `<div class="row"><span>${p.name}</span><span>${p.wholesale_price > 0 ? '$' + Number(p.wholesale_price).toFixed(2) + ' desde ' + p.wholesale_min + ' und.' : '<span class="muted">precio de mayor sin definir</span>'}</span></div>`).join('') || '<p class="muted">No se encontraron. Corre schema.sql de nuevo en Neon para agregarlos.</p>'}
+    </div>
+    <div class="card"><strong>Últimos pedidos al mayor</strong>
+      ${orders.slice(0, 6).map((o) => `<div class="row"><span>${o.customer || 'Sin nombre'}</span><span style="font-weight:600;">$${Number(o.total).toFixed(2)}</span></div>`).join('') || '<p class="muted">Todavía no hay pedidos al mayor registrados.</p>'}
+    </div>`;
+}
+
+function renderMateriales() {
+  return `
+    <div class="grid2">
+      <div class="card">
+        <strong>Materia prima (${materials.length})</strong>
+        ${materials.map((m) => `
+          <div class="row">
+            <div><div style="font-weight:600;font-size:13.5px;">${m.name}</div>
+            <div class="muted" style="${Number(m.stock) <= Number(m.min_stock) ? 'color:var(--berry);' : ''}">${m.stock} ${m.unit} · costo ${m.cost ? '$' + Number(m.cost).toFixed(2) : 'sin definir'}</div></div>
+            <div style="display:flex;gap:6px;"><button class="ghost" onclick="editMaterial(${m.id})">Editar</button><button class="ghost danger" onclick="deleteMaterial(${m.id})">Eliminar</button></div>
+          </div>`).join('') || '<p class="muted">Agrega tu primer material (leche, envases de 150gr, etiquetas, etc.)</p>'}
+      </div>
+      <div class="card">
+        <strong id="matFormTitle">Agregar material</strong>
+        <form id="matForm">
+          <input type="hidden" id="matId">
+          <label>Nombre</label><input id="matName" required>
+          <label>Unidad</label><select id="matUnit"><option>g</option><option>kg</option><option>ml</option><option>l</option><option>unidad</option></select>
+          <label>Stock actual</label><input id="matStock" type="number" step="0.01" value="0">
+          <label>Alertar bajo</label><input id="matMin" type="number" step="0.01" value="0">
+          <label>Costo por unidad ($)</label><input id="matCost" type="number" step="0.01" value="0">
+          <button class="primary" type="submit">Guardar</button>
+        </form>
+      </div>
+    </div>`;
+}
+
+function renderProductos() {
+  return `<div class="card"><strong>Productos de mayor y su receta</strong>
+    <p class="muted">Precio de mayor, cantidad mínima y qué materia prima consume cada unidad de 150gr y de 1 kilo.</p>
+    ${wholesaleProducts().map((p) => `
+      <div class="row" style="display:block;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong>${p.name}</strong><button class="ghost" onclick="toggleProduct('${p.id}')">Editar</button>
+        </div>
+        <div class="muted">Mayor ${p.wholesale_price > 0 ? '$' + Number(p.wholesale_price).toFixed(2) + ' desde ' + p.wholesale_min : 'sin definir'} · ${p.recipe.length} insumo(s)</div>
+        <div id="prod-${p.id}" style="display:none;margin-top:10px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div><label>Precio de mayor ($)</label><input type="number" step="0.01" id="wholesale-${p.id}" value="${p.wholesale_price}"></div>
+            <div><label>Cantidad mínima</label><input type="number" id="min-${p.id}" value="${p.wholesale_min}"></div>
+          </div>
+          <button class="ghost" style="margin-top:8px;" onclick="savePrices('${p.id}')">Guardar precio</button>
+          <p class="muted" style="margin-top:10px;">Receta:</p>
+          <div id="recipe-${p.id}">
+            ${p.recipe.map((r) => `
+              <div style="display:flex;gap:6px;margin-bottom:6px;" data-line>
+                <select class="recipe-mat" style="flex:2;">${materials.map((m) => `<option value="${m.id}" ${m.id === r.materialId ? 'selected' : ''}>${m.name}</option>`).join('')}</select>
+                <input class="recipe-qty" type="number" step="0.01" style="flex:1;" value="${r.qty}">
+                <button class="ghost danger" onclick="this.closest('[data-line]').remove()">Quitar</button>
+              </div>`).join('')}
+          </div>
+          <button class="ghost" onclick="addRecipeLine('${p.id}')">+ Agregar insumo</button>
+          <button class="primary" onclick="saveRecipe('${p.id}')">Guardar receta</button>
+        </div>
+      </div>`).join('') || '<p class="muted">No se encontraron los productos de mayor. Corre schema.sql de nuevo en Neon (es seguro, no borra nada).</p>'}
+  </div>`;
+}
+
+function renderPedidos() {
+  return `
+    <div class="grid2">
+      <div class="card">
+        <strong>Historial al mayor (${orders.length})</strong>
+        ${orders.map((o) => `
+          <div class="row" style="display:block;">
+            <div style="display:flex;justify-content:space-between;"><strong>${o.customer || 'Sin nombre'}</strong><span>$${Number(o.total).toFixed(2)}</span></div>
+            <div class="muted">${new Date(o.created_at).toLocaleString('es-VE')} · ${(o.items || []).map((it) => `${it.qty}x ${it.product_name}`).join(', ')}</div>
+          </div>`).join('') || '<p class="muted">Todavía no hay pedidos al mayor.</p>'}
+      </div>
+      <div class="card">
+        <strong>Registrar pedido a supermercado</strong>
+        <form id="orderForm">
+          <label>Supermercado / cliente</label><input id="ordCustomer" required>
+          <label>Teléfono</label><input id="ordPhone">
+          <div id="orderLines"></div>
+          <button type="button" class="ghost" onclick="addOrderLine()">+ Agregar producto</button>
+          <button class="primary" type="submit">Registrar pedido</button>
+          <p class="muted" id="orderWarn" style="color:var(--berry);"></p>
+        </form>
+      </div>
+    </div>`;
+}
+
+function editMaterial(id) {
+  const m = materials.find((x) => x.id === id);
+  el('matFormTitle').textContent = 'Editar material';
+  el('matId').value = m.id; el('matName').value = m.name; el('matUnit').value = m.unit;
+  el('matStock').value = m.stock; el('matMin').value = m.min_stock; el('matCost').value = m.cost;
+}
+async function deleteMaterial(id) {
+  if (!confirm('¿Eliminar este material?')) return;
+  await api('/api/materials?id=' + id, { method: 'DELETE' });
+  await loadAll();
+}
+function toggleProduct(id) {
+  const e = el('prod-' + id);
+  e.style.display = e.style.display === 'none' ? 'block' : 'none';
+}
+async function savePrices(id) {
+  const p = products.find((x) => x.id === id);
+  await api('/api/products', { method: 'PUT', body: JSON.stringify({ id, retailPrice: p.retail_price, active: p.active, wholesalePrice: Number(el('wholesale-' + id).value), wholesaleMin: Number(el('min-' + id).value) }) });
+  await loadAll();
+}
+function addRecipeLine(id) {
+  const wrap = el('recipe-' + id);
+  const div = document.createElement('div');
+  div.dataset.line = '';
+  div.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
+  div.innerHTML = `<select class="recipe-mat" style="flex:2;">${materials.map((m) => `<option value="${m.id}">${m.name}</option>`).join('')}</select><input class="recipe-qty" type="number" step="0.01" style="flex:1;" value="0"><button class="ghost danger" onclick="this.closest('[data-line]').remove()">Quitar</button>`;
+  wrap.appendChild(div);
+}
+async function saveRecipe(id) {
+  const wrap = el('recipe-' + id);
+  const lines = [...wrap.children].map((row) => ({ materialId: Number(row.querySelector('.recipe-mat').value), qty: Number(row.querySelector('.recipe-qty').value) }));
+  await api('/api/products', { method: 'POST', body: JSON.stringify({ action: 'setRecipe', productId: id, lines }) });
+  await loadAll();
+}
+function addOrderLine() {
+  const wrap = el('orderLines');
+  const div = document.createElement('div');
+  div.dataset.oline = '';
+  div.style.cssText = 'display:flex;gap:6px;margin-top:8px;';
+  div.innerHTML = `<select class="ord-prod" style="flex:2;">${wholesaleProducts().map((p) => `<option value="${p.id}">${p.name}</option>`).join('')}</select><input class="ord-qty" type="number" min="1" value="${wholesaleProducts()[0]?.wholesale_min || 1}" style="flex:1;"><button type="button" class="ghost danger" onclick="this.closest('[data-oline]').remove()">×</button>`;
+  wrap.appendChild(div);
+}
+
+function bind() {
+  const matForm = el('matForm');
+  if (matForm) matForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const id = el('matId').value;
+    const payload = { name: el('matName').value, unit: el('matUnit').value, stock: Number(el('matStock').value), minStock: Number(el('matMin').value), cost: Number(el('matCost').value) };
+    if (id) await api('/api/materials', { method: 'PUT', body: JSON.stringify({ id: Number(id), ...payload }) });
+    else await api('/api/materials', { method: 'POST', body: JSON.stringify(payload) });
+    await loadAll();
+  };
+
+  const orderForm = el('orderForm');
+  if (orderForm) {
+    el('orderLines').innerHTML = '';
+    addOrderLine();
+    orderForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const lines = [...el('orderLines').children].map((row) => {
+        const productId = row.querySelector('.ord-prod').value;
+        const product = products.find((p) => p.id === productId);
+        const qty = Number(row.querySelector('.ord-qty').value);
+        const useWholesale = product.wholesale_price > 0 && qty >= product.wholesale_min;
+        return { productId, name: product.name, qty, unitPrice: useWholesale ? product.wholesale_price : product.retail_price };
+      });
+      try {
+        await api('/api/orders', { method: 'POST', body: JSON.stringify({ customer: el('ordCustomer').value, phone: el('ordPhone').value, channel: 'mayor', lines }) });
+        await loadAll();
+        switchTab('pedidos');
+      } catch (err) {
+        el('orderWarn').textContent = err.message;
+      }
+    };
+  }
+}
+
+loadAll().catch((err) => (el('content').innerHTML = `<div class="card">${err.message}</div>`));
+</script>
+</body>
+</html>
