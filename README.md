@@ -59,3 +59,38 @@ Guarda y vuelve a desplegar (**Deployments → ⋯ → Redeploy**) para que tome
 Abre el sitio, abre las herramientas de desarrollador del navegador (F12) → pestaña "Network"/"Red", agrega algo al carrito y dale "Enviar pedido por WhatsApp". Busca una petición a `/api/orders`:
 - Si **no aparece ninguna petición**: el archivo `index.html` desplegado todavía es una versión vieja — vuelve a subir el `index.html` de este paquete.
 - Si aparece con **status 500 o error**: cópiame el mensaje de error que muestra la respuesta y lo reviso.
+
+## Actualización: costeo real por receta en el panel al mayor
+
+- `mayor.html` ahora calcula el costo de cada unidad **igual que tu hoja de Excel**: costo del paquete ÷ cantidad del paquete × cantidad usada en la receta, sumado, dividido entre el rendimiento del lote.
+- Cargué tu materia prima y tus dos recetas reales (kilo y 150gr) en `schema.sql`, con dos ajustes que confirmaste: la suma incluye "carro" y "casa" en ambas recetas, y el cultivo de yogurt cuesta lo mismo ($2 el paquete de 160) en las dos.
+- **Vuelve a correr `schema.sql` completo en Neon** — agrega las columnas nuevas (`package_qty`, `yield_qty`, `margin_target`) y carga tu materia prima/recetas reales. Es seguro correrlo de nuevo si ya lo habías corrido antes.
+- En "Productos y recetas" ahora puedes editar el **rendimiento del lote** y el **margen objetivo** por producto, y ves la tabla completa de costos por insumo, el costo total del lote, el costo por unidad, el precio sugerido, y la ganancia contra tu precio de mayor actual.
+
+## Presupuestos al mayor (PDF)
+
+- Nueva pestaña en `mayor.html` → **Presupuestos**: llenas nombre del supermercado, RIF, dirección, teléfono, fecha y cantidades — el presupuesto se ve en pantalla con el mismo diseño que tu plantilla, con el subtotal/total calculados solos.
+- Botón **"Imprimir / Guardar como PDF"** abre el diálogo de impresión de tu navegador; elige "Guardar como PDF" como destino. No necesita ninguna librería ni conexión — funciona en cualquier navegador.
+- No se guarda historial de presupuestos todavía (cada uno se genera al momento). Si más adelante quieres un historial de presupuestos enviados, lo agregamos como una tabla más.
+
+## Facturación electrónica (SENIAT) — base lista, falta conectar
+
+Dejé escrito `api/invoice.js`: toma un pedido ya guardado, arma el JSON `documentoElectronico` con la estructura que compartiste (encabezado, comprador, vendedor, totales, detallesItems) y lo envía a tu proveedor certificado.
+
+**Esto todavía NO está activo** — a propósito, porque me faltan datos tuyos que no debo inventar:
+
+1. **La URL exacta del API de tu proveedor** (HKA, Unidigital, u otro) y cómo autentican sus peticiones (el ejemplo que compartiste sugiere un token Bearer, pero confírmalo con ellos).
+2. **Tu contrato activo con ese proveedor** — la facturación fiscal en Venezuela requiere que tú (no yo) tengas una cuenta certificada con ellos; sin eso, no hay a dónde enviar el documento.
+3. Tus datos fiscales reales: RIF, razón social y dirección fiscal de Fitgurt/tu empresa.
+
+Cuando tengas esos 3 datos, agrega estas variables de entorno en Vercel y `api/invoice.js` queda funcional sin tocar código:
+
+| Variable | Valor |
+|---|---|
+| `SENIAT_PROVIDER_URL` | la URL del endpoint de emisión de tu proveedor |
+| `SENIAT_API_TOKEN` | tu token/credencial de ese proveedor |
+| `SELLER_RIF` | tu RIF |
+| `SELLER_RAZON_SOCIAL` | tu razón social |
+| `SELLER_DIRECCION` | tu dirección fiscal |
+
+Mientras tanto, si intentas usarlo, responde con un mensaje claro de "todavía no configurado" en vez de fallar en silencio.

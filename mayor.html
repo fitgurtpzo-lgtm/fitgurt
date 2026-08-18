@@ -37,6 +37,44 @@
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;}
   .muted{color:var(--ink-soft);font-size:12.5px;}
   .badge{display:inline-block;background:var(--cream-deep);color:var(--berry);font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:100px;margin-left:6px;}
+
+  /* Presupuesto */
+  .quote-sheet{
+    background:#fff; width:100%; max-width:760px; margin:0 auto; position:relative;
+    overflow:hidden; border-radius:6px; box-shadow:0 4px 18px rgba(38,49,79,0.12);
+  }
+  .quote-blob{position:absolute; background:#c3ce78; border-radius:50% 50% 50% 4%; opacity:0.9;}
+  .quote-blob.b1{width:170px;height:170px; top:-70px; left:-50px;}
+  .quote-blob.b2{width:110px;height:110px; top:-40px; left:90px; border-radius:50% 4% 50% 50%;}
+  .quote-blob.b3{width:120px;height:120px; bottom:-50px; right:60px;}
+  .quote-blob.b4{width:90px;height:90px; bottom:-30px; right:-30px;}
+  .quote-mark{
+    position:absolute; top:26px; right:26px; width:150px; height:100px; background:#c3ce78;
+    border-radius:16px; display:flex; align-items:center; justify-content:center;
+  }
+  .quote-mark img{width:110px;}
+  .quote-num{position:absolute; top:20px; right:190px; font-weight:700; font-size:13px; z-index:2;}
+  .quote-valid{position:absolute; top:130px; right:12px; writing-mode:vertical-rl; font-size:11px; color:#555; z-index:2;}
+  .quote-head{padding:34px 40px 10px; position:relative; z-index:2;}
+  .quote-head .qdate{font-size:13px; color:#333;}
+  .quote-head .qbuyer{margin-top:16px; font-size:13.5px; color:#333; line-height:1.5;}
+  .quote-title{font-family:'Fraunces',serif; font-weight:700; font-size:32px; margin:22px 40px 18px; color:#3a3a3a;}
+  .quote-table-wrap{background:#e4e4e4; padding:26px 40px 20px; position:relative; z-index:2;}
+  .quote-table-head{display:grid; grid-template-columns:2fr 1fr 1fr 1fr; font-size:13px; color:#333; padding-bottom:10px;}
+  .quote-table-head span:first-child{font-family:'Fraunces',serif; font-size:20px; font-weight:600;}
+  .quote-row{display:grid; grid-template-columns:2fr 1fr 1fr 1fr; padding:14px 0; font-size:13.5px; align-items:center;}
+  .quote-row b{font-weight:700;}
+  .quote-foot{display:flex; justify-content:space-between; align-items:flex-end; padding-top:20px; margin-top:10px; border-top:1px solid #bbb;}
+  .quote-foot .qnote{font-size:11.5px; color:#444; max-width:280px; line-height:1.5;}
+  .quote-foot .qtotals{text-align:right; font-size:14px;}
+  .quote-foot .qtotals .qtotal{font-weight:700; font-size:16px; margin-top:4px;}
+  .quote-bottom{padding:0 40px 30px; position:relative; z-index:2;}
+  @media print{
+    body *{visibility:hidden;}
+    .quote-sheet, .quote-sheet *{visibility:visible;}
+    .quote-sheet{position:absolute; top:0; left:0; box-shadow:none; margin:0;}
+    .topbar, .tabs, .wrap > h1, .wrap > p, #quoteForm{display:none !important;}
+  }
 </style>
 </head>
 <body>
@@ -59,6 +97,7 @@
     <button class="tab" data-tab="materiales">Materia prima</button>
     <button class="tab" data-tab="productos">Productos y recetas</button>
     <button class="tab" data-tab="pedidos">Pedidos al mayor</button>
+    <button class="tab" data-tab="presupuestos">Presupuestos</button>
   </div>
   <div id="content"></div>
 </div>
@@ -108,11 +147,115 @@ function render() {
   if (tab === 'materiales') c.innerHTML = renderMateriales();
   if (tab === 'productos') c.innerHTML = renderProductos();
   if (tab === 'pedidos') c.innerHTML = renderPedidos();
+  if (tab === 'presupuestos') c.innerHTML = renderPresupuestos();
   bind();
 }
 
 function wholesaleProducts() {
   return products.filter((p) => WHOLESALE_IDS.includes(p.id));
+}
+
+let quoteState = {
+  number: '1001',
+  date: new Date().toISOString().slice(0, 10),
+  clientName: '',
+  clientRif: '',
+  clientAddress: '',
+  clientPhone: '',
+  items: {}, // productId -> {qty, unitPrice}
+};
+
+function ensureQuoteItems() {
+  wholesaleProducts().forEach((p) => {
+    if (!quoteState.items[p.id]) {
+      quoteState.items[p.id] = { qty: p.wholesale_min || 1, unitPrice: Number(p.wholesale_price) || Number(p.retail_price) || 0 };
+    }
+  });
+}
+
+function quoteSheetHTML() {
+  ensureQuoteItems();
+  const items = wholesaleProducts().map((p) => ({ p, ...quoteState.items[p.id] }));
+  const subtotal = items.reduce((s, it) => s + it.qty * it.unitPrice, 0);
+  const fechaFmt = new Date(quoteState.date + 'T00:00:00').toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric' });
+  return `
+    <span class="quote-blob b1"></span><span class="quote-blob b2"></span>
+    <span class="quote-blob b3"></span><span class="quote-blob b4"></span>
+    <span class="quote-num">#${quoteState.number}</span>
+    <div class="quote-mark"><img src="fitgurt-logo-cropped.png" alt="Fitgurt"></div>
+    <span class="quote-valid">Válido por 30 días</span>
+    <div class="quote-head">
+      <div class="qdate">${fechaFmt}</div>
+      <div class="qbuyer">
+        <strong>${quoteState.clientName || 'Nombre del supermercado'}</strong><br>
+        ${quoteState.clientRif || 'RIF'}<br>
+        ${quoteState.clientAddress || 'Dirección'}<br>
+        ${quoteState.clientPhone || 'Teléfono'}
+      </div>
+    </div>
+    <div class="quote-title">DISTRIBUCIÓN AL MAYOR</div>
+    <div class="quote-table-wrap">
+      <div class="quote-table-head"><span>YOGURT NATURAL</span><span>Unidad</span><span>Cantidad</span><span>Caja</span></div>
+      ${items.map((it) => `<div class="quote-row"><b>${it.p.name.toUpperCase()}</b><span>$${it.unitPrice.toFixed(2)}</span><span>${it.qty}</span><span>$${(it.qty * it.unitPrice).toFixed(2)}</span></div>`).join('')}
+      <div class="quote-foot">
+        <div class="qnote">Para pagos, soporte o información sobre su presupuesto, puede comunicarse directamente al 0414-9858205.</div>
+        <div class="qtotals"><div>Subtotal &nbsp; $${subtotal.toFixed(2)}</div><div class="qtotal">Total &nbsp; $${subtotal.toFixed(2)}</div></div>
+      </div>
+    </div>
+    <div class="quote-bottom"></div>`;
+}
+
+function renderPresupuestos() {
+  ensureQuoteItems();
+  const items = wholesaleProducts().map((p) => ({ p, ...quoteState.items[p.id] }));
+
+  return `
+    <div class="grid2">
+      <div><div class="quote-sheet" id="quoteSheet">${quoteSheetHTML()}</div></div>
+      <div class="card" id="quoteForm">
+        <strong>Datos del presupuesto</strong>
+        <label>Número</label><input id="qNumber" value="${quoteState.number}">
+        <label>Fecha</label><input id="qDate" type="date" value="${quoteState.date}">
+        <label>Nombre del supermercado</label><input id="qClientName" value="${quoteState.clientName}">
+        <label>RIF</label><input id="qClientRif" value="${quoteState.clientRif}">
+        <label>Dirección</label><input id="qClientAddress" value="${quoteState.clientAddress}">
+        <label>Teléfono</label><input id="qClientPhone" value="${quoteState.clientPhone}">
+        <p class="muted" style="margin-top:14px;">Cantidades y precio por unidad:</p>
+        ${items.map((it) => `
+          <label>${it.p.name}</label>
+          <div style="display:flex;gap:6px;">
+            <input class="qty-input" data-id="${it.p.id}" type="number" min="1" value="${it.qty}" style="flex:1;">
+            <input class="price-input" data-id="${it.p.id}" type="number" step="0.01" value="${it.unitPrice}" style="flex:1;">
+          </div>`).join('')}
+        <button class="primary" type="button" id="printQuoteBtn">Imprimir / Guardar como PDF</button>
+        <p class="muted" style="margin-top:8px;">Se abre el diálogo de impresión de tu navegador — elige "Guardar como PDF" como destino.</p>
+      </div>
+    </div>`;
+}
+
+function refreshQuotePreview() {
+  const sheet = el('quoteSheet');
+  if (sheet) sheet.innerHTML = quoteSheetHTML();
+}
+
+function bindQuoteForm() {
+  const form = el('quoteForm');
+  if (!form) return;
+  el('qNumber').oninput = (e) => { quoteState.number = e.target.value; refreshQuotePreview(); };
+  el('qDate').oninput = (e) => { quoteState.date = e.target.value; refreshQuotePreview(); };
+  el('qClientName').oninput = (e) => { quoteState.clientName = e.target.value; refreshQuotePreview(); };
+  el('qClientRif').oninput = (e) => { quoteState.clientRif = e.target.value; refreshQuotePreview(); };
+  el('qClientAddress').oninput = (e) => { quoteState.clientAddress = e.target.value; refreshQuotePreview(); };
+  el('qClientPhone').oninput = (e) => { quoteState.clientPhone = e.target.value; refreshQuotePreview(); };
+  document.querySelectorAll('.qty-input').forEach((inp) => (inp.oninput = () => {
+    quoteState.items[inp.dataset.id].qty = Number(inp.value) || 0;
+    refreshQuotePreview();
+  }));
+  document.querySelectorAll('.price-input').forEach((inp) => (inp.oninput = () => {
+    quoteState.items[inp.dataset.id].unitPrice = Number(inp.value) || 0;
+    refreshQuotePreview();
+  }));
+  el('printQuoteBtn').onclick = () => window.print();
 }
 
 function renderResumen() {
@@ -137,44 +280,82 @@ function renderMateriales() {
     <div class="grid2">
       <div class="card">
         <strong>Materia prima (${materials.length})</strong>
-        ${materials.map((m) => `
+        ${materials.map((m) => {
+          const perUnit = Number(m.package_qty) > 0 ? Number(m.cost) / Number(m.package_qty) : 0;
+          return `
           <div class="row">
             <div><div style="font-weight:600;font-size:13.5px;">${m.name}</div>
-            <div class="muted" style="${Number(m.stock) <= Number(m.min_stock) ? 'color:var(--berry);' : ''}">${m.stock} ${m.unit} · costo ${m.cost ? '$' + Number(m.cost).toFixed(2) : 'sin definir'}</div></div>
+            <div class="muted" style="${Number(m.stock) <= Number(m.min_stock) ? 'color:var(--berry);' : ''}">
+              Paquete: $${Number(m.cost).toFixed(2)} por ${m.package_qty} ${m.unit} → <strong>$${perUnit.toFixed(4)}/${m.unit}</strong> · stock ${m.stock} ${m.unit}
+            </div></div>
             <div style="display:flex;gap:6px;"><button class="ghost" onclick="editMaterial(${m.id})">Editar</button><button class="ghost danger" onclick="deleteMaterial(${m.id})">Eliminar</button></div>
-          </div>`).join('') || '<p class="muted">Agrega tu primer material (leche, envases de 150gr, etiquetas, etc.)</p>'}
+          </div>`;
+        }).join('') || '<p class="muted">Agrega tu primer material (leche, envases de 150gr, etiquetas, etc.)</p>'}
       </div>
       <div class="card">
         <strong id="matFormTitle">Agregar material</strong>
         <form id="matForm">
           <input type="hidden" id="matId">
           <label>Nombre</label><input id="matName" required>
-          <label>Unidad</label><select id="matUnit"><option>g</option><option>kg</option><option>ml</option><option>l</option><option>unidad</option></select>
-          <label>Stock actual</label><input id="matStock" type="number" step="0.01" value="0">
+          <label>Unidad</label><select id="matUnit"><option>g</option><option>kg</option><option>ml</option><option>l</option><option>gr</option><option>litros</option><option>unidad</option></select>
+          <label>Costo del paquete que compras ($)</label><input id="matCost" type="number" step="0.01" value="0">
+          <label>Cuántas unidades trae ese paquete</label><input id="matPackageQty" type="number" step="0.01" value="1">
+          <label>Stock actual (en esas unidades)</label><input id="matStock" type="number" step="0.01" value="0">
           <label>Alertar bajo</label><input id="matMin" type="number" step="0.01" value="0">
-          <label>Costo por unidad ($)</label><input id="matCost" type="number" step="0.01" value="0">
           <button class="primary" type="submit">Guardar</button>
         </form>
       </div>
     </div>`;
 }
 
+function costBreakdown(p) {
+  const lines = p.recipe.map((r) => {
+    const perUnit = r.materialPackageQty > 0 ? r.materialCost / r.materialPackageQty : 0;
+    return { ...r, perUnit, subtotal: perUnit * r.qty };
+  });
+  const lote = lines.reduce((s, l) => s + l.subtotal, 0);
+  const yieldQty = Number(p.yield_qty) || 1;
+  const costoUnidad = lote / yieldQty;
+  const margin = Number(p.margin_target) || 0;
+  const precioSugerido = margin < 1 ? costoUnidad / (1 - margin) : costoUnidad;
+  const gananciaActual = Number(p.wholesale_price) > 0 ? Number(p.wholesale_price) - costoUnidad : null;
+  return { lines, lote, costoUnidad, precioSugerido, gananciaActual };
+}
+
 function renderProductos() {
   return `<div class="card"><strong>Productos de mayor y su receta</strong>
-    <p class="muted">Precio de mayor, cantidad mínima y qué materia prima consume cada unidad de 150gr y de 1 kilo.</p>
-    ${wholesaleProducts().map((p) => `
+    <p class="muted">Costo calculado igual que tu hoja: costo del paquete ÷ cantidad del paquete × cantidad usada, sumado y dividido entre el rendimiento del lote.</p>
+    ${wholesaleProducts().map((p) => {
+      const b = costBreakdown(p);
+      return `
       <div class="row" style="display:block;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <strong>${p.name}</strong><button class="ghost" onclick="toggleProduct('${p.id}')">Editar</button>
         </div>
-        <div class="muted">Mayor ${p.wholesale_price > 0 ? '$' + Number(p.wholesale_price).toFixed(2) + ' desde ' + p.wholesale_min : 'sin definir'} · ${p.recipe.length} insumo(s)</div>
+        <div class="muted">
+          Costo por unidad <strong style="color:var(--ink);">$${b.costoUnidad.toFixed(4)}</strong>
+          · Precio sugerido (margen ${(Number(p.margin_target) * 100).toFixed(0)}%) <strong style="color:var(--ink);">$${b.precioSugerido.toFixed(2)}</strong>
+          · Precio de mayor actual ${p.wholesale_price > 0 ? '$' + Number(p.wholesale_price).toFixed(2) : 'sin definir'}
+          ${b.gananciaActual !== null ? `<span class="badge" style="${b.gananciaActual < 0 ? 'background:#f9e9ed;color:var(--berry);' : ''}">Ganancia $${b.gananciaActual.toFixed(2)}/und.</span>` : ''}
+        </div>
         <div id="prod-${p.id}" style="display:none;margin-top:10px;">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">
             <div><label>Precio de mayor ($)</label><input type="number" step="0.01" id="wholesale-${p.id}" value="${p.wholesale_price}"></div>
             <div><label>Cantidad mínima</label><input type="number" id="min-${p.id}" value="${p.wholesale_min}"></div>
+            <div><label>Rendimiento del lote</label><input type="number" step="0.01" id="yield-${p.id}" value="${p.yield_qty}"></div>
+            <div><label>Margen objetivo (%)</label><input type="number" step="1" id="margin-${p.id}" value="${(Number(p.margin_target) * 100).toFixed(0)}"></div>
           </div>
-          <button class="ghost" style="margin-top:8px;" onclick="savePrices('${p.id}')">Guardar precio</button>
-          <p class="muted" style="margin-top:10px;">Receta:</p>
+          <button class="ghost" style="margin-top:8px;" onclick="savePrices('${p.id}')">Guardar precio y costeo</button>
+
+          <table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:12.5px;">
+            <thead><tr style="text-align:left;color:var(--ink-soft);"><th style="padding:4px 0;">Insumo</th><th>$/unidad</th><th>Cantidad</th><th style="text-align:right;">Subtotal</th></tr></thead>
+            <tbody>
+              ${b.lines.map((l) => `<tr style="border-top:1px dashed #e8e3d9;"><td style="padding:5px 0;">${l.materialName}</td><td>$${l.perUnit.toFixed(4)}</td><td>${l.qty} ${l.unit}</td><td style="text-align:right;">$${l.subtotal.toFixed(4)}</td></tr>`).join('')}
+              <tr style="border-top:1px solid var(--ink);font-weight:700;"><td colspan="3" style="padding:6px 0;">Costo del lote</td><td style="text-align:right;">$${b.lote.toFixed(4)}</td></tr>
+            </tbody>
+          </table>
+
+          <p class="muted" style="margin-top:10px;">Receta (para ajustar insumos y cantidades):</p>
           <div id="recipe-${p.id}">
             ${p.recipe.map((r) => `
               <div style="display:flex;gap:6px;margin-bottom:6px;" data-line>
@@ -186,7 +367,8 @@ function renderProductos() {
           <button class="ghost" onclick="addRecipeLine('${p.id}')">+ Agregar insumo</button>
           <button class="primary" onclick="saveRecipe('${p.id}')">Guardar receta</button>
         </div>
-      </div>`).join('') || '<p class="muted">No se encontraron los productos de mayor. Corre schema.sql de nuevo en Neon (es seguro, no borra nada).</p>'}
+      </div>`;
+    }).join('') || '<p class="muted">No se encontraron los productos de mayor. Corre schema.sql de nuevo en Neon (es seguro, no borra nada).</p>'}
   </div>`;
 }
 
@@ -220,6 +402,7 @@ function editMaterial(id) {
   el('matFormTitle').textContent = 'Editar material';
   el('matId').value = m.id; el('matName').value = m.name; el('matUnit').value = m.unit;
   el('matStock').value = m.stock; el('matMin').value = m.min_stock; el('matCost').value = m.cost;
+  el('matPackageQty').value = m.package_qty;
 }
 async function deleteMaterial(id) {
   if (!confirm('¿Eliminar este material?')) return;
@@ -232,7 +415,18 @@ function toggleProduct(id) {
 }
 async function savePrices(id) {
   const p = products.find((x) => x.id === id);
-  await api('/api/products', { method: 'PUT', body: JSON.stringify({ id, retailPrice: p.retail_price, active: p.active, wholesalePrice: Number(el('wholesale-' + id).value), wholesaleMin: Number(el('min-' + id).value) }) });
+  await api('/api/products', {
+    method: 'PUT',
+    body: JSON.stringify({
+      id,
+      retailPrice: p.retail_price,
+      active: p.active,
+      wholesalePrice: Number(el('wholesale-' + id).value),
+      wholesaleMin: Number(el('min-' + id).value),
+      yieldQty: Number(el('yield-' + id).value),
+      marginTarget: Number(el('margin-' + id).value) / 100,
+    }),
+  });
   await loadAll();
 }
 function addRecipeLine(id) {
@@ -259,11 +453,12 @@ function addOrderLine() {
 }
 
 function bind() {
+  bindQuoteForm();
   const matForm = el('matForm');
   if (matForm) matForm.onsubmit = async (e) => {
     e.preventDefault();
     const id = el('matId').value;
-    const payload = { name: el('matName').value, unit: el('matUnit').value, stock: Number(el('matStock').value), minStock: Number(el('matMin').value), cost: Number(el('matCost').value) };
+    const payload = { name: el('matName').value, unit: el('matUnit').value, stock: Number(el('matStock').value), minStock: Number(el('matMin').value), cost: Number(el('matCost').value), packageQty: Number(el('matPackageQty').value) };
     if (id) await api('/api/materials', { method: 'PUT', body: JSON.stringify({ id: Number(id), ...payload }) });
     else await api('/api/materials', { method: 'POST', body: JSON.stringify(payload) });
     await loadAll();

@@ -61,3 +61,54 @@ INSERT INTO products (id, name, retail_price, wholesale_min) VALUES
   ('mermelada_vaso', 'Yogurt con mermelada vaso 8oz', 2, 12),
   ('natural_150gr', 'Yogurt natural 150gr (supermercados)', 0, 1)
 ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- Actualización: costeo por receta (paquete → costo por unidad,
+-- rendimiento del lote, margen objetivo). Segura de correr de nuevo.
+-- ============================================================
+
+ALTER TABLE materials ADD COLUMN IF NOT EXISTS package_qty NUMERIC NOT NULL DEFAULT 1;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS yield_qty NUMERIC NOT NULL DEFAULT 1;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS margin_target NUMERIC NOT NULL DEFAULT 0.30;
+CREATE UNIQUE INDEX IF NOT EXISTS materials_name_unique ON materials(name);
+
+-- Materia prima real, tomada de tu hoja de costos
+-- (cost = costo del paquete completo; package_qty = cuántas unidades trae ese paquete)
+INSERT INTO materials (name, unit, stock, min_stock, cost, package_qty) VALUES
+  ('Leche', 'gr', 0, 0, 9.94, 4),
+  ('Yogurt (cultivo)', 'unidad', 0, 0, 2, 160),
+  ('Vasos', 'unidad', 0, 0, 63.32, 100),
+  ('Tapas', 'unidad', 0, 0, 23.42, 100),
+  ('Envío insumos', 'unidad', 0, 0, 15.38, 120),
+  ('Etiquetas', 'unidad', 0, 0, 10, 70),
+  ('Agua', 'litros', 0, 0, 0.32, 18000),
+  ('Mano de obra', 'unidad', 0, 0, 15, 100),
+  ('Carro (transporte)', 'unidad', 0, 0, 40, 600),
+  ('Casa (espacio de producción)', 'unidad', 0, 0, 40, 600)
+ON CONFLICT (name) DO UPDATE SET cost = EXCLUDED.cost, package_qty = EXCLUDED.package_qty;
+
+-- Rendimiento y margen objetivo (30%, igual que tu hoja)
+UPDATE products SET yield_qty = 4, margin_target = 0.30 WHERE id = 'natural_1kilo';
+UPDATE products SET yield_qty = 4, margin_target = 0.30 WHERE id = 'natural_150gr';
+
+-- Número de control fiscal, para cuando se conecte la facturación electrónica
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS control_number TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS invoiced_at TIMESTAMPTZ;
+INSERT INTO product_recipe (product_id, material_id, qty)
+SELECT 'natural_1kilo', id, qty FROM materials
+JOIN (VALUES
+  ('Leche', 1), ('Yogurt (cultivo)', 1), ('Vasos', 1), ('Tapas', 1),
+  ('Envío insumos', 1), ('Etiquetas', 1), ('Agua', 750),
+  ('Mano de obra', 1), ('Carro (transporte)', 1), ('Casa (espacio de producción)', 1)
+) AS r(name, qty) ON r.name = materials.name
+ON CONFLICT (product_id, material_id) DO UPDATE SET qty = EXCLUDED.qty;
+
+-- Receta de "Yogurt natural 150gr" (el cultivo usa 4 en vez de 1, igual que tu hoja)
+INSERT INTO product_recipe (product_id, material_id, qty)
+SELECT 'natural_150gr', id, qty FROM materials
+JOIN (VALUES
+  ('Leche', 1), ('Yogurt (cultivo)', 4), ('Vasos', 1), ('Tapas', 1),
+  ('Envío insumos', 1), ('Etiquetas', 1), ('Agua', 750),
+  ('Mano de obra', 1), ('Carro (transporte)', 1), ('Casa (espacio de producción)', 1)
+) AS r(name, qty) ON r.name = materials.name
+ON CONFLICT (product_id, material_id) DO UPDATE SET qty = EXCLUDED.qty;

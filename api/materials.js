@@ -12,21 +12,21 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { name, unit, stock, minStock, cost } = req.body;
+      const { name, unit, stock, minStock, cost, packageQty } = req.body;
       if (!name) return res.status(400).json({ error: 'Falta el nombre' });
       const [row] = await sql`
-        INSERT INTO materials (name, unit, stock, min_stock, cost)
-        VALUES (${name}, ${unit || 'unidad'}, ${stock || 0}, ${minStock || 0}, ${cost || 0})
+        INSERT INTO materials (name, unit, stock, min_stock, cost, package_qty)
+        VALUES (${name}, ${unit || 'unidad'}, ${stock || 0}, ${minStock || 0}, ${cost || 0}, ${packageQty || 1})
         RETURNING *`;
       return res.status(201).json(row);
     }
 
     if (req.method === 'PUT') {
-      const { id, name, unit, stock, minStock, cost } = req.body;
+      const { id, name, unit, stock, minStock, cost, packageQty } = req.body;
       if (!id) return res.status(400).json({ error: 'Falta el id' });
       const [row] = await sql`
         UPDATE materials
-        SET name = ${name}, unit = ${unit}, stock = ${stock}, min_stock = ${minStock}, cost = ${cost}
+        SET name = ${name}, unit = ${unit}, stock = ${stock}, min_stock = ${minStock}, cost = ${cost}, package_qty = ${packageQty || 1}
         WHERE id = ${id}
         RETURNING *`;
       return res.status(200).json(row);

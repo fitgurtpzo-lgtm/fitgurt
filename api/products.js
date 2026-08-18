@@ -5,14 +5,22 @@ const sql = neon(process.env.DATABASE_URL);
 
 async function withRecipes(products) {
   const recipeRows = await sql`
-    SELECT pr.product_id, pr.material_id, pr.qty, m.name AS material_name, m.unit AS material_unit
+    SELECT pr.product_id, pr.material_id, pr.qty, m.name AS material_name, m.unit AS material_unit,
+           m.cost AS material_cost, m.package_qty AS material_package_qty
     FROM product_recipe pr
     JOIN materials m ON m.id = pr.material_id`;
   return products.map((p) => ({
     ...p,
     recipe: recipeRows
       .filter((r) => r.product_id === p.id)
-      .map((r) => ({ materialId: r.material_id, qty: Number(r.qty), materialName: r.material_name, unit: r.material_unit })),
+      .map((r) => ({
+        materialId: r.material_id,
+        qty: Number(r.qty),
+        materialName: r.material_name,
+        unit: r.material_unit,
+        materialCost: Number(r.material_cost),
+        materialPackageQty: Number(r.material_package_qty),
+      })),
   }));
 }
 
@@ -39,13 +47,14 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PUT') {
-      // Actualiza precios / cantidad mínima mayor / disponibilidad de un producto
-      const { id, retailPrice, wholesalePrice, wholesaleMin, active } = req.body;
+      // Actualiza precios / cantidad mínima mayor / disponibilidad / costeo de un producto
+      const { id, retailPrice, wholesalePrice, wholesaleMin, active, yieldQty, marginTarget } = req.body;
       if (!id) return res.status(400).json({ error: 'Falta el id' });
       const [row] = await sql`
         UPDATE products
         SET retail_price = ${retailPrice}, wholesale_price = ${wholesalePrice},
-            wholesale_min = ${wholesaleMin}, active = ${active === undefined ? true : active}
+            wholesale_min = ${wholesaleMin}, active = ${active === undefined ? true : active},
+            yield_qty = ${yieldQty || 1}, margin_target = ${marginTarget ?? 0.30}
         WHERE id = ${id}
         RETURNING *`;
       return res.status(200).json(row);
