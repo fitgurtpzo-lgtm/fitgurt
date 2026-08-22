@@ -41,6 +41,7 @@ async function loadAll() {
   renderOrders();
   renderStock();
   renderCustomers();
+  renderCatalog();
 }
 
 function renderDate() {
@@ -193,6 +194,126 @@ function downloadCsv(filename, content) {
   link.click();
   URL.revokeObjectURL(url);
 }
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+let openCatalogId = null;
+
+function renderCatalog() {
+  el('catalogList').innerHTML = products
+    .map((p) => {
+      const flavors = Array.isArray(p.flavors) ? p.flavors : [];
+      const isOpen = openCatalogId === p.id;
+      return `
+      <div class="catalog-row">
+        ${p.image ? `<img class="catalog-thumb" src="${p.image}" alt="${p.name}">` : `<div class="catalog-thumb empty">Sin foto</div>`}
+        <div>
+          <strong>${p.name}</strong>
+          <div style="font-size:12px;color:var(--soft);">$${Number(p.retail_price).toFixed(2)} · ${p.active ? 'Activo' : 'Pausado'} · ${flavors.length} sabor(es)</div>
+        </div>
+        <button class="secondary" onclick="toggleCatalogEdit('${p.id}')">${isOpen ? 'Cerrar' : 'Editar'}</button>
+        <div class="catalog-edit ${isOpen ? 'open' : ''}" id="catedit-${p.id}">
+          <label>Nombre</label><input type="text" id="catname-${p.id}" value="${p.name}">
+          <label>Precio menudeo ($)</label><input type="number" step="0.01" id="catprice-${p.id}" value="${p.retail_price}">
+          <label>Foto</label><input type="file" accept="image/*" id="catimg-${p.id}">
+          <label>Sabores (marca si NO está disponible)</label>
+          <div id="catflavors-${p.id}">
+            ${flavors.map((f, i) => `
+              <div class="flavor-row" data-flavor="${i}">
+                <input type="text" value="${f.label}" class="flavor-label">
+                <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;font-weight:500;white-space:nowrap;"><input type="checkbox" class="flavor-avail" ${f.available === false ? '' : 'checked'}> disponible</label>
+                <button class="secondary" type="button" onclick="this.closest('[data-flavor]').remove()">Quitar</button>
+              </div>`).join('')}
+          </div>
+          <button class="secondary" type="button" onclick="addFlavorRow('${p.id}')" style="margin-top:6px;">+ Agregar sabor</button>
+          <div style="margin-top:12px;display:flex;gap:8px;">
+            <button class="primary" type="button" onclick="saveCatalogProduct('${p.id}')">Guardar cambios</button>
+            <button class="secondary" type="button" onclick="toggleCatalogActive('${p.id}', ${!p.active})">${p.active ? 'Pausar producto' : 'Activar producto'}</button>
+          </div>
+        </div>
+      </div>`;
+    })
+    .join('');
+}
+
+function toggleCatalogEdit(id) {
+  openCatalogId = openCatalogId === id ? null : id;
+  renderCatalog();
+}
+
+function addFlavorRow(id) {
+  const wrap = el('catflavors-' + id);
+  const div = document.createElement('div');
+  div.className = 'flavor-row';
+  div.dataset.flavor = 'new';
+  div.innerHTML = `<input type="text" value="" class="flavor-label" placeholder="Nombre del sabor"><label style="display:flex;align-items:center;gap:4px;font-size:11.5px;font-weight:500;white-space:nowrap;"><input type="checkbox" class="flavor-avail" checked> disponible</label><button class="secondary" type="button" onclick="this.closest('[data-flavor]').remove()">Quitar</button>`;
+  wrap.appendChild(div);
+}
+
+async function toggleCatalogActive(id, value) {
+  const p = products.find((x) => x.id === id);
+  await api('/api/products', {
+    method: 'PUT',
+    body: JSON.stringify({ id, retailPrice: p.retail_price, wholesalePrice: p.wholesale_price, wholesaleMin: p.wholesale_min, active: value }),
+  });
+  showToast(value ? 'Producto activado.' : 'Producto pausado.');
+  await loadAll();
+}
+
+async function saveCatalogProduct(id) {
+  const p = products.find((x) => x.id === id);
+  const name = el('catname-' + id).value;
+  const retailPrice = Number(el('catprice-' + id).value);
+  const flavorRows = [...el('catflavors-' + id).children];
+  const flavors = flavorRows.map((row) => ({
+    label: row.querySelector('.flavor-label').value.trim(),
+    available: row.querySelector('.flavor-avail').checked,
+  })).filter((f) => f.label);
+
+  const fileInput = el('catimg-' + id);
+  let image = p.image;
+  if (fileInput.files[0]) image = await fileToDataUrl(fileInput.files[0]);
+
+  await api('/api/products', {
+    method: 'PUT',
+    body: JSON.stringify({
+      id, name, retailPrice, wholesalePrice: p.wholesale_price, wholesaleMin: p.wholesale_min,
+      active: p.active, image, flavors,
+    }),
+  });
+  showToast('Catálogo actualizado.');
+  await loadAll();
+}
+
+el('newProductForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const id = el('npId').value.trim().replace(/\s+/g, '_').toLowerCase();
+  const name = el('npName').value.trim();
+  const retailPrice = Number(el('npPrice').value);
+  const fileInput = el('npImage');
+  let image = null;
+  if (fileInput.files[0]) image = await fileToDataUrl(fileInput.files[0]);
+  try {
+    await api('/api/products', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'create', id, name, retailPrice, image, category: 'menudeo' }),
+    });
+    el('npMsg').style.color = 'var(--moss)';
+    el('npMsg').textContent = 'Producto agregado.';
+    e.target.reset();
+    await loadAll();
+  } catch (err) {
+    el('npMsg').style.color = 'var(--berry)';
+    el('npMsg').textContent = err.message;
+  }
+};
 
 el('newOrder').onclick = () => el('orderDialog').showModal();
 el('saveOrder').onclick = async (event) => {

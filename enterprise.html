@@ -19,6 +19,7 @@
       <a class="nav-link active" href="#resumen"><span>▦</span> Resumen</a>
       <a class="nav-link" href="#pedidos"><span>□</span> Pedidos <b id="orderCount">4</b></a>
       <a class="nav-link" href="#inventario"><span>◇</span> Inventario</a>
+      <a class="nav-link" href="#catalogo"><span>▧</span> Catálogo</a>
       <a class="nav-link" href="#clientes"><span>♧</span> Clientes</a>
       <a class="nav-link" href="mayor.html"><span>⇄</span> Panel al mayor</a>
     </nav>
@@ -45,6 +46,26 @@
 
     <section id="pedidos" class="orders-section"><div class="section-heading"><div><p class="eyebrow">Operación</p><h2>Pedidos recientes</h2></div><button class="text-button" id="showAllOrders">Ver todos los pedidos →</button></div><div class="panel table-panel"><div class="order-tools"><div class="order-filters" role="group" aria-label="Filtrar pedidos"><button class="filter active" data-filter="all">Todos</button><button class="filter" data-filter="pending">Por preparar</button><button class="filter" data-filter="ready">Listos</button><button class="filter" data-filter="delivery">En ruta</button></div><label class="order-search"><span>⌕</span><input id="orderSearch" type="search" placeholder="Buscar pedido o cliente"></label></div><div class="table-wrap"><table><thead><tr><th>Pedido</th><th>Cliente</th><th>Entrega</th><th>Total</th><th>Estado</th><th aria-label="Acciones"></th></tr></thead><tbody id="ordersTable"></tbody></table></div><p class="empty-orders" id="emptyOrders" hidden>No hay pedidos que coincidan con esta vista.</p></div></section>
 
+    <section id="catalogo" class="inventory-section">
+      <div class="section-heading"><div><p class="eyebrow">Catálogo público</p><h2>Fotos, sabores y productos del sitio</h2></div></div>
+      <div class="panel inventory-panel">
+        <p style="color:var(--soft);font-size:13px;margin:0 0 14px;">Los cambios aquí se reflejan en tu sitio (index.html) en segundos: foto, sabores disponibles, y productos nuevos.</p>
+        <div id="catalogList"></div>
+        <div class="catalog-new">
+          <h3 style="margin-bottom:10px;">Agregar producto nuevo</h3>
+          <form id="newProductForm">
+            <div class="cat-new-grid">
+              <label>Identificador (sin espacios)<input id="npId" placeholder="ej. yogurt_mango_8oz" required></label>
+              <label>Nombre<input id="npName" placeholder="Yogurt de mango 8oz" required></label>
+              <label>Precio menudeo ($)<input id="npPrice" type="number" step="0.01" value="0"></label>
+              <label>Foto<input id="npImage" type="file" accept="image/*"></label>
+            </div>
+            <button class="primary" type="submit" style="margin-top:10px;">Agregar al catálogo</button>
+            <p class="muted" id="npMsg" style="font-size:12px;color:var(--berry);margin-top:6px;"></p>
+          </form>
+        </div>
+      </div>
+    </section>
     <section id="inventario" class="inventory-section"><div class="section-heading"><div><p class="eyebrow">Catálogo</p><h2>Disponibilidad de inventario</h2></div><div class="inventory-actions"><span id="stockNotice" class="sync-status">● Sincronizado localmente</span><button class="secondary" id="exportStock">Exportar CSV</button></div></div><div class="panel inventory-panel"><div class="inventory-intro"><div><h3>Control rápido</h3><p>Activa o pausa productos. Los cambios se mantienen en este navegador para la gestión diaria.</p></div><span class="inventory-summary"><b id="stockAvailable">14</b> disponibles</span></div><div class="stock-list" id="stockList"></div></div></section>
     <section id="clientes" class="customers-section"><div class="section-heading"><div><p class="eyebrow">Relaciones</p><h2>Clientes</h2></div><button class="secondary" id="exportCustomers">Exportar clientes</button></div><div class="customer-grid"><article class="panel customer-insight"><p class="eyebrow">Base de clientes</p><strong id="customerTotal">0</strong><span>clientes en este período</span><div class="insight-rule"></div><p><b id="returningCustomers">0</b> clientes recurrentes</p><small>El historial se actualiza con cada pedido registrado.</small></article><article class="panel customer-list"><div class="customer-list-head"><h3>Mayor valor acumulado</h3><span>Últimos pedidos</span></div><div id="customersList"></div><p class="empty-customers" id="emptyCustomers" hidden>Aún no hay clientes para mostrar.</p></article></div></section>
   </main>

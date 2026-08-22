@@ -112,3 +112,41 @@ JOIN (VALUES
   ('Mano de obra', 1), ('Carro (transporte)', 1), ('Casa (espacio de producción)', 1)
 ) AS r(name, qty) ON r.name = materials.name
 ON CONFLICT (product_id, material_id) DO UPDATE SET qty = EXCLUDED.qty;
+
+-- ============================================================
+-- Actualización: facturación al mayor (RIF, IVA, entregado/pagado)
+-- ============================================================
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_rif TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_condition TEXT NOT NULL DEFAULT 'contado' CHECK (payment_condition IN ('contado','credito'));
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMPTZ;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS paid BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS invoice_number TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS subtotal NUMERIC;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS iva NUMERIC;
+
+-- ============================================================
+-- Actualización: catálogo editable desde el panel (foto, sabores, nuevos productos)
+-- ============================================================
+ALTER TABLE products ADD COLUMN IF NOT EXISTS image TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS flavors JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE products ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'menudeo';
+
+-- Producto que faltaba: 1 kilo con mermelada
+INSERT INTO products (id, name, retail_price, wholesale_min, category) VALUES
+  ('natural_1kilo_mermelada', 'Yogurt 1 kilo con mermelada', 12, 6, 'menudeo')
+ON CONFLICT (id) DO NOTHING;
+
+-- Sabores editables desde el panel (Catálogo), reflejan las opciones ya visibles en el sitio
+UPDATE products SET flavors = '[
+  {"label":"Fresa","available":true},{"label":"Piña","available":true},
+  {"label":"Mora","available":true},{"label":"Durazno","available":true},
+  {"label":"Ciruela pasas","available":true},{"label":"Granola y miel","available":true}
+]'::jsonb WHERE id = 'mermelada_vaso' AND flavors = '[]'::jsonb;
+
+UPDATE products SET flavors = '[
+  {"label":"Fresa","available":true},{"label":"Piña","available":true},
+  {"label":"Mora","available":true},{"label":"Durazno","available":true},
+  {"label":"Ciruelas pasas","available":true}
+]'::jsonb WHERE id = 'mermelada_250' AND flavors = '[]'::jsonb;
