@@ -11,12 +11,13 @@ export default async function handler(req, res) {
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
 
-    const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'MI_TOKEN_SECRETO_FITGURT';
+    // Sincronizado exactamente con el token que usaremos en Meta
+    const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'fitgurt_token_seguro_2026';
 
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
       return res.status(200).send(challenge);
     }
-    return res.status(403).send('Error de verificación');
+    return res.status(403).send('Error de verificación: Token incorrecto');
   }
 
   // 2. Recepción de mensajes de WhatsApp (POST)
@@ -33,11 +34,9 @@ export default async function handler(req, res) {
 
         console.log(`[WhatsApp] Mensaje de ${fromNumber}: "${userText}"`);
 
-        // AQUÍ PUEDES CONSULTAR NEON SI QUIERES:
-        // Por ejemplo, buscar si pregunta por un producto o guardar el cliente en una tabla.
+        // Ejemplo con Neon (opcional activo)
         // const productos = await sql`SELECT * FROM productos WHERE activo = true`;
 
-        // Generar respuesta inteligente (puedes conectar tu lógica de Gemini aquí o seguir usando tu API externa)
         const replyText = `¡Hola! Gracias por escribir a Fitgurt. Hemos recibido tu mensaje: "${userText}". En un momento un asesor o el sistema automatizado te atenderá con nuestro catálogo. 🥛✨`;
 
         // 3. Enviar respuesta de vuelta a WhatsApp vía Meta Graph API
