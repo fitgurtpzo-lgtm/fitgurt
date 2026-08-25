@@ -19,17 +19,18 @@ export default async function handler(req, res) {
 
       if (messaging) {
         const senderId = messaging.sender?.id;
-        const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN;
+        
+        // TOKEN DIRECTO AQUÍ (Pega tu token largo entre las comillas)
+        const PAGE_ACCESS_TOKEN = 'IGAATCeE7UwUhBZAFl5ZAXRUNHJ0emRtdFFRM3d2R2l6Qmh3bzMyeHo2MVQ2ZA09ZAUldvaTNCUGJ4dUdVN0t4QUdrWldiRWVEbGJTU3ZAQMnp2YUR3QkRmRlM0YVR6QkFhblZANUUd5dUhZAZAEpZAN1BIaUVmY2JncVJqM3lIeGl2aEpaSQZDZD';
 
-        console.log("Intentando enviar mensaje a ID:", senderId);
-        console.log("Token usado (primeros caracteres):", PAGE_ACCESS_TOKEN ? PAGE_ACCESS_TOKEN.substring(0, 10) + "..." : "NO EXISTE TOKEN");
+        console.log("Enviando mensaje a ID:", senderId);
 
         const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             recipient: { id: senderId },
-            message: { text: "¡Hola! Esto es una prueba de Fitgurt." }
+            message: { text: "¡Hola! Fitgurt ha respondido con éxito. 🥛✨" }
           })
         });
 
