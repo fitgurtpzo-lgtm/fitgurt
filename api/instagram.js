@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       const senderId = messaging?.sender?.id || changes?.value?.sender?.id || entry?.id;
 
       if (senderId) {
-        const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN;
+        const PAGE_ACCESS_TOKEN = EAAUIK5oxCVcBSRqf53c2vooZAaxxjF6AhbyJlKpZBf36FpQMjzMNHh6hUDiLRZAOpz2WgenpXCcb7noLpaCNoxa8V3NEf6IgIwLAjz2Tk1zk4AKMZBQbXxCfWN7sok7nWyetSD0p1SQQcifLZBn7YOWxzG4yhjVNMInM3q43J3ARsPaDJtx90lEZBrbZAiNnr6ZBTRMCKoGs4Fv2UjRtA7AecoZBRzEKdaD9ZCIgytY9BSnXxZCZAysaWm2ygyw1yaZCZBVxhfpzTD3M8KfKLWmZCWFccK3mPQsZAv9j0cZBMJ88ZDprocess.env.INSTAGRAM_ACCESS_TOKEN;
 
         console.log("Enviando respuesta al ID de Instagram:", senderId);
 
