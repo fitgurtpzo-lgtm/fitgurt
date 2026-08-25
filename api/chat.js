@@ -5,12 +5,13 @@ export default async function handler(req, res) {
 
   try {
     const { messages } = req.body;
-    const userMessage = messages?.[messages.length - 1]?.content?.toLowerCase() || '';
+    const lastMessage = messages?[messages.length - 1];
+    const userText = lastMessage?.content ? lastMessage.content.toLowerCase() : '';
 
-    // Lógica inteligente local de Gurtie con tus datos reales
+    // Respuestas inteligentes con tus datos reales de Fitgurt
     let reply = "¡Hola! Bienvenido a Fitgurt 🥛✨. Soy Gurtie, tu asistente virtual. ¿En qué te puedo ayudar hoy?";
 
-    if (userMessage.includes('precio') || userMessage.includes('cuanto') || userMessage.includes('menu') || userMessage.includes('catalogo')) {
+    if (userText.includes('precio') || userText.includes('cuanto') || userText.includes('menu') || userText.includes('catalogo')) {
       reply = "¡Claro que sí! Aquí tienes nuestro menú y precios actuales:\n\n" +
               "• Yogurts 8oz (Mora, Piña, Fresa): *2$* *(Ahorita no hay ciruelas pasas)*\n" +
               "• Parfait 8oz (*5$*) y 14oz (*8$*)\n" +
@@ -18,13 +19,12 @@ export default async function handler(req, res) {
               "• Kilos con mermelada (Fresa/Piña/Mora): *12$*\n" +
               "• Promo 3+ kilos: *7.5$ c/u* (Total 22.5$)\n\n" +
               "¿Cuál te gustaría ordenar hoy? 🥛";
-    } else if (userMessage.includes('promo') || userMessage.includes('oferta') || userMessage.includes('kilo')) {
+    } else if (userText.includes('promo') || userText.includes('oferta') || userText.includes('kilo')) {
       reply = "🔥 ¡Tenemos la Gran Promo Fitgurt! El kilo de yogurt natural individual sale en 8.5$, pero si llevas 3 o más unidades te quedan a precio especial de *7.5$ c/u* (Total: 22.5$). ¡Aprovecha!";
-    } else if (userMessage.includes('hola') || userMessage.includes('buenos dias') || userMessage.includes('buenas')) {
+    } else if (userText.includes('hola') || userText.includes('buenos dias') || userText.includes('buenas')) {
       reply = "¡Hola! Qué gusto saludarte. ¿Te gustaría ver nuestros yogurts de 8oz, los parfaits o las promos por kilo?";
     }
 
-    // Retornamos la estructura que tu frontend espera
     return res.status(200).json({
       data: {
         reply: reply
@@ -32,7 +32,11 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error("Error en el chat API:", error);
-    return res.status(500).json({ error: error.message });
+    console.error("Error en chat.js:", error);
+    return res.status(500).json({ 
+      data: { 
+        reply: "Lo siento, ocurrió un problema temporal. Por favor reintenta en unos momentos." 
+      } 
+    });
   }
 }
