@@ -14,28 +14,33 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     try {
       const body = req.body;
+      console.log('Webhook completo recibido:', JSON.stringify(body, null, 2));
+
       const entry = body.entry?.[0];
       const messaging = entry?.messaging?.[0];
+      
+      // Capturamos el ID del remitente de forma segura sin importar la variante del webhook
+      const senderId = messaging?.sender?.id || entry?.id;
 
-      if (messaging) {
-        const senderId = messaging.sender?.id;
-        
-        // TOKEN DIRECTO AQUÍ (Pega tu token largo entre las comillas)
-        const PAGE_ACCESS_TOKEN = 'IGAATCeE7UwUhBZAFl5ZAXRUNHJ0emRtdFFRM3d2R2l6Qmh3bzMyeHo2MVQ2ZA09ZAUldvaTNCUGJ4dUdVN0t4QUdrWldiRWVEbGJTU3ZAQMnp2YUR3QkRmRlM0YVR6QkFhblZANUUd5dUhZAZAEpZAN1BIaUVmY2JncVJqM3lIeGl2aEpaSQZDZD';
+      if (senderId) {
+        // Pon tu token aquí o déjalo configurado en Vercel
+        const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN;
 
-        console.log("Enviando mensaje a ID:", senderId);
+        console.log("Enviando mensaje al ID de Instagram:", senderId);
 
         const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             recipient: { id: senderId },
-            message: { text: "¡Hola! Fitgurt ha respondido con éxito. 🥛✨" }
+            message: { text: "¡Hola! Fitgurt te saluda. Hemos recibido tu mensaje con éxito. 🥛✨" }
           })
         });
 
         const data = await response.json();
         console.log("RESPUESTA COMPLETA DE META:", JSON.stringify(data, null, 2));
+      } else {
+        console.log("No se encontró ningún senderId válido en el payload.");
       }
 
       return res.status(200).json({ success: true });
