@@ -19,35 +19,31 @@ export default async function handler(req, res) {
       const entry = body.entry?.[0];
       const messaging = entry?.messaging?.[0];
 
-      // Si es un evento de edición o no tiene remitente claro, lo ignoramos para evitar errores
-      if (!messaging || messaging.message_edit) {
-        console.log("Evento ignorado (es un cambio de estado o edición sin texto de usuario).");
-        return res.status(200).json({ success: true });
-      }
+      if (messaging) {
+        // Obtenemos el ID del remitente de cualquier lugar posible del objeto messaging
+        const senderId = messaging.sender?.id || messaging.recipient?.id;
+        const PAGE_ID = "17841448817465869";
 
-      const senderId = messaging.sender?.id;
-      const userText = messaging.message?.text;
+        // Si el mensaje viene de la cuenta evaluadora (y no de nuestra propia página)
+        if (senderId && senderId !== PAGE_ID) {
+          console.log(`¡Detectada interacción del usuario ID: ${senderId}! Enviando respuesta...`);
 
-      // Nos aseguramos de que el mensaje sea del usuario y no de nuestra propia cuenta
-      const PAGE_ID = "17841448817465869"; // Tu ID de fitgurtpzo
-      if (senderId && senderId !== PAGE_ID && userText) {
-        console.log(`Mensaje real de ${senderId}: "${userText}"`);
+          const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN;
 
-        const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN;
+          const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              recipient: { id: senderId },
+              message: { text: "¡Hola! Fitgurt te saluda. Hemos recibido tu mensaje correctamente. 🥛✨" }
+            })
+          });
 
-        const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            recipient: { id: senderId },
-            message: { text: `¡Hola! Gracias por escribir a Fitgurt. Recibimos tu mensaje: "${userText}". Pronto un asesor te atenderá. 🥛✨` }
-          })
-        });
-
-        const data = await response.json();
-        console.log("Respuesta de envío de Meta:", JSON.stringify(data, null, 2));
-      } else {
-        console.log("El mensaje provino de la misma página o no contiene texto válido.");
+          const data = await response.json();
+          console.log("Respuesta de Meta:", JSON.stringify(data, null, 2));
+        } else {
+          console.log("Interacción omitida por ser de la propia página.");
+        }
       }
 
       return res.status(200).json({ success: true });
