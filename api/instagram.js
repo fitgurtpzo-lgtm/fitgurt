@@ -19,11 +19,10 @@ export default async function handler(req, res) {
       const entry = body.entry?.[0];
       const messaging = entry?.messaging?.[0];
       
-      // Capturamos el ID del remitente de forma segura sin importar la variante del webhook
+      // Extraemos el ID del remitente de forma segura
       const senderId = messaging?.sender?.id || entry?.id;
 
       if (senderId) {
-        // Pon tu token aquí o déjalo configurado en Vercel
         const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN;
 
         console.log("Enviando mensaje al ID de Instagram:", senderId);
